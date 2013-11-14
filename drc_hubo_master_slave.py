@@ -87,15 +87,24 @@ def mapMiniToFull(n):
        return ha.LWR
     elif ( n == 15):
        return ha.LF1
+    elif ( n == 16):
+       return ha.WST
     else:
        print n
        return 37
 
-def toggleTorque(actuator):
-    if (actuator.torque_limit==800):
-        actuator.torque_limit=0
-        actuator.max_torque=0
+def getJointDirection(n):
+    n = mapMiniToFull(n)
+    if ( n == ha.RSP or n == ha.RSR or n == ha.RSY or n == ha.RWY or n == ha.LSR or n == ha.LSY or n == ha.LEB or n == ha.LWY or n == ha.LWP or n == ha.WST):
+      return -1
     else:
+       return 1
+
+def toggleTorque(actuator):
+    if actuator.enableTorque==True:
+	actuator.enableTorque=False
+    else:
+	actuator.enableTorque=True
         actuator.torque_limit=800
         actuator.max_torque=800
 
@@ -148,9 +157,7 @@ def main(settings):
     for actuator in myActuators:
         actuator.moving_speed = 50
         actuator.synchronized = True
-        actuator.torque_enable = True 
-        actuator.torque_limit = 0
-        actuator.max_torque = 0
+	actuator.enableTorque = False
     
     # Randomly vary servo position within a small range
     print myActuators
@@ -160,7 +167,7 @@ def main(settings):
         for actuator in myActuators:
             actuator.read_all()
             time.sleep(0.005)
-            ref.ref[mapMiniToFull(actuator.id)]=dyn2rad(actuator.current_position)
+            ref.ref[mapMiniToFull(actuator.id)]=getJointDirection(actuator.id) * dyn2rad(actuator.current_position)
 #	print encoder.enc[ha.NKY], " : ", encoder.enc[ha.NK1], " : ", encoder.enc[ha.NK2]
         r.put(ref)
         time.sleep(0.02)
@@ -210,7 +217,7 @@ if __name__ == '__main__':
         portChoice = None
         while not portChoice:                
             portTest = raw_input(portPrompt)
-            portTest = validateInput(portTest, 1, portCount)
+            portTest = validateInput(portTest, 0, portCount)
             if portTest:
                 portChoice = possiblePorts[portTest - 1]
 
