@@ -35,18 +35,22 @@ import os
 import dynamixel
 import time
 import random
-import sys
 import subprocess
 import optparse
 import yaml
 import numpy as np
 
+from multiprocessing import Process, Lock
+import sys
+import getch
 
 # Hubo-ach stuff
 import hubo_ach as ha
 import ach
 from ctypes import *
 
+rightArm = [0,1,2,3,4,5,6,7]
+leftArm  = [8,9,10,11,12,13,14,15]
 
 def rad2dyn(rad):
     return np.int(np.floor( (rad + np.pi)/(2.0 * np.pi) * 1024 ))
@@ -100,11 +104,39 @@ def getJointDirection(n):
     else:
        return 1
 
+def keyPresses(actuators,lock):
+ print "Keyboard checking started"
+ while True:
+    time.sleep(0.01)
+    ch = getch.getch()
+    if (ch == ' '):
+        lock.acquire()
+        for actuator in actuators:
+            toggleTorque(actuator)
+            time.sleep(0.01)
+        lock.release()
+    elif ( ch == 'f' ):
+        lock.acquire()
+        for actuator in actuators:
+            time.sleep(0.01)
+            if (actuator.id in leftArm):
+               toggleTorque(actuator)
+        lock.release()
+    elif ( ch == 'j' ):
+        lock.acquire()
+        for actuator in actuators:
+            time.sleep(0.01)
+            if (actuator.id in rightArm):
+               toggleTorque(actuator)
+        lock.release()
+    elif (ch == 'q'):
+        sys.exit("User exited program")
+
 def toggleTorque(actuator):
-    if actuator.enableTorque==True:
-	actuator.enableTorque=False
+    if actuator.torque_enable==True:
+        actuator.torque_enable=False
     else:
-	actuator.enableTorque=True
+	actuator.torque_enable=True
         actuator.torque_limit=800
         actuator.max_torque=800
 
@@ -138,11 +170,10 @@ def main(settings):
     serial = dynamixel.SerialStream(port=portName, baudrate=baudRate, timeout=1)
     net = dynamixel.DynamixelNetwork(serial)
     
+    myActuators = []
     # Ping the range of servos that are attached
     print "Scanning for Dynamixels..."
     net.scan(0, highestServoId)
-    
-    myActuators = []
     
     for dyn in net.get_dynamixels():
         print dyn.id
@@ -153,23 +184,32 @@ def main(settings):
       sys.exit(0)
     else:
       print "...Done"
-    
+ 
     for actuator in myActuators:
+	print actuator.id 
         actuator.moving_speed = 50
         actuator.synchronized = True
-	actuator.enableTorque = False
-    
-    # Randomly vary servo position within a small range
+        actuator.torque_enable =  False
+        actuator.torque_limit = 30 
+        actuator.max_torque = 10
+        time.sleep(0.1)
+
     print myActuators
+    actuatorsLock = Lock()
+    p = Process(target=keyPresses, args=(myActuators, actuatorsLock))
+    p.start()
     print "Master Slave Server Running"
+
     while True:
 	[statuss, framesizes] = s.get(state, wait=False, last=True)
+        actuatorsLock.acquire()
         for actuator in myActuators:
             actuator.read_all()
             time.sleep(0.005)
             ref.ref[mapMiniToFull(actuator.id)]=getJointDirection(actuator.id) * dyn2rad(actuator.current_position)
 #	print encoder.enc[ha.NKY], " : ", encoder.enc[ha.NK1], " : ", encoder.enc[ha.NK2]
         r.put(ref)
+        actuatorsLock.release()
         time.sleep(0.02)
 
 def validateInput(userInput, rangeMin, rangeMax):
@@ -208,7 +248,7 @@ if __name__ == '__main__':
         except subprocess.CalledProcessError:
             sys.exit("USB2Dynamixel not found. Please connect one.")
             
-        counter = 0
+        counter = 1
         portCount = len(possiblePorts)
         for port in possiblePorts:
             portPrompt += "\t" + str(counter) + " - " + port + "\n"
