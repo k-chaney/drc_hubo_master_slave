@@ -95,8 +95,8 @@ def mapMiniToFull(n):
 
 def getJointDirection(n):
     n = mapMiniToFull(n)
-    if ( n == ha.RSP or n == ha.RSR or n == ha.RSY or n == ha.RWY or n == ha.LSR or n == ha.LSY or n == ha.LEB or n == ha.LWY or n == ha.LWP or n == ha.WST):
-      return -1
+    if ( n == ha.LWY or n == ha.LWP or n==ha.LSY or n==ha.RSP or n == ha.RWY or n == ha.RSY):
+       return -1
     else:
        return 1
 
