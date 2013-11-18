@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# /* -*-  indent-tabs-mode:t; tab-width: 8; c-basic-offset: 8  -*- */
-# /*
 # Copyright (c) 2013, Kenneth Chaney 
 # All rights reserved.
 #
@@ -49,6 +46,7 @@ import hubo_ach as ha
 import ach
 from ctypes import *
 
+userExit = False
 rightArm = [0,1,2,3,4,5,6,7]
 leftArm  = [8,9,10,11,12,13,14,15]
 
@@ -99,40 +97,39 @@ def mapMiniToFull(n):
 
 def getJointDirection(n):
     n = mapMiniToFull(n)
-    if ( n == ha.LWY or n == ha.LWP or n==ha.LSY or n==ha.RSP or n == ha.RWY or n == ha.RSY):
+    if ( n == ha.LWY or n == ha.LWP or n==ha.LSY or n==ha.RSP or n == ha.RWY or n == ha.RSY ):
        return -1
     else:
        return 1
 
 def keyPresses(actuators,lock):
- print "Keyboard checking started"
- while True:
-    time.sleep(0.01)
-    ch = getch.getch()
-    if (ch == ' '):
-        lock.acquire()
-        for actuator in actuators:
-            toggleTorque(actuator)
-            time.sleep(0.01)
-        lock.release()
-    elif ( ch == 'f' ):
-        lock.acquire()
-        for actuator in actuators:
-            time.sleep(0.01)
-            if (actuator.id in leftArm):
-               toggleTorque(actuator)
-        lock.release()
-    elif ( ch == 'j' ):
-        lock.acquire()
-        for actuator in actuators:
-            time.sleep(0.01)
-            if (actuator.id in rightArm):
-               toggleTorque(actuator)
-        lock.release()
-    elif (ch == 'q'):
-        sys.exit("User exited program")
+  print "Keyboard checking started"
+  while True:
+     time.sleep(0.01)
+     ch = getch.getch()
+     if (ch == ' '):
+         lock.acquire()
+         for actuator in actuators:
+             toggleTorque(actuator)
+         lock.release()
+     elif ( ch == 'f' ):
+         lock.acquire()
+         for actuator in actuators:
+             if (actuator.id in leftArm):
+                toggleTorque(actuator)
+         lock.release()
+     elif ( ch == 'j' ):
+         lock.acquire()
+         for actuator in actuators:
+             if (actuator.id in rightArm):
+                toggleTorque(actuator)
+         lock.release()
+     elif (ch == 'q'):
+         userExit=True
+         sys.exit("User exited program")
 
 def toggleTorque(actuator):
+    time.sleep(0.01)
     if actuator.torque_enable==True:
         actuator.torque_enable=False
     else:
@@ -192,7 +189,7 @@ def main(settings):
         actuator.torque_enable =  False
         actuator.torque_limit = 30 
         actuator.max_torque = 10
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     print myActuators
     actuatorsLock = Lock()
@@ -201,6 +198,8 @@ def main(settings):
     print "Master Slave Server Running"
 
     while True:
+        if userExit:
+            sys.exit(0)
 	[statuss, framesizes] = s.get(state, wait=False, last=True)
         actuatorsLock.acquire()
         for actuator in myActuators:
