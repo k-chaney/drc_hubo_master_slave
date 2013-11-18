@@ -1,4 +1,4 @@
-# Copyright (c) 2013, Kenneth Chaney 
+# Copyright (c) 2013, Daniel Lofaro, Kenneth Chaney 
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@ import ach
 from ctypes import *
 
 userExit = False
+upperBody = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 rightArm = [0,1,2,3,4,5,6,7]
 leftArm  = [8,9,10,11,12,13,14,15]
 
@@ -109,33 +110,34 @@ def keyPresses(actuators,lock):
      ch = getch.getch()
      if (ch == ' '):
          lock.acquire()
-         for actuator in actuators:
-             toggleTorque(actuator)
+         toggleTorques(actuators,upperBody)
          lock.release()
      elif ( ch == 'f' ):
          lock.acquire()
-         for actuator in actuators:
-             if (actuator.id in leftArm):
-                toggleTorque(actuator)
+         toggleTorques(actuators,leftArm)
          lock.release()
      elif ( ch == 'j' ):
          lock.acquire()
-         for actuator in actuators:
-             if (actuator.id in rightArm):
-                toggleTorque(actuator)
+         toggleTorques(actuators,rightArm)
+         lock.release()
+     elif ( ch == 'b' ):
+         lock.acquire()
+         toggleTorques(actuators,[16])
          lock.release()
      elif (ch == 'q'):
          userExit=True
          sys.exit("User exited program")
 
-def toggleTorque(actuator):
-    time.sleep(0.01)
-    if actuator.torque_enable==True:
-        actuator.torque_enable=False
-    else:
-	actuator.torque_enable=True
-        actuator.torque_limit=800
-        actuator.max_torque=800
+def toggleTorques(actuators, actList):
+    for actuator in actuators:
+      if (actuator.id in actList):
+        time.sleep(0.01)
+        if actuator.torque_enable==True:
+            actuator.torque_enable=False
+        else:
+            actuator.torque_enable=True
+            actuator.torque_limit=800
+            actuator.max_torque=800
 
 def main(settings):
     # Open Hubo-Ach feed-forward and feed-back (reference and state) channels
@@ -198,7 +200,7 @@ def main(settings):
     print "Master Slave Server Running"
 
     while True:
-        if userExit:
+        if userExit==False:
             sys.exit(0)
 	[statuss, framesizes] = s.get(state, wait=False, last=True)
         actuatorsLock.acquire()
@@ -206,7 +208,6 @@ def main(settings):
             actuator.read_all()
             time.sleep(0.005)
             ref.ref[mapMiniToFull(actuator.id)]=getJointDirection(actuator.id) * dyn2rad(actuator.current_position)
-#	print encoder.enc[ha.NKY], " : ", encoder.enc[ha.NK1], " : ", encoder.enc[ha.NK2]
         r.put(ref)
         actuatorsLock.release()
         time.sleep(0.02)
