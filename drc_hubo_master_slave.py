@@ -200,7 +200,7 @@ def main(settings):
     print "Master Slave Server Running"
 
     while True:
-        if userExit==False:
+        if userExit:
             sys.exit(0)
 	[statuss, framesizes] = s.get(state, wait=False, last=True)
         actuatorsLock.acquire()
