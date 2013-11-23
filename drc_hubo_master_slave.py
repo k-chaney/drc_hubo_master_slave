@@ -43,8 +43,12 @@ import getch
 
 # Hubo-ach stuff
 import hubo_ach as ha
+
 import ach
 from ctypes import *
+
+import openhubo
+from openravepy import *
 
 userExit = False
 upperBody = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
@@ -139,7 +143,25 @@ def toggleTorques(actuators, actList):
             actuator.torque_limit=800
             actuator.max_torque=800
 
+def convert_ha_joints_to_oh(robot, ha_joints):
+	oh_joints = numpy.zeros(robot.GetDOF())
+	inds = openhubo.mapping.ha_ind_from_oh_ind(robot)
+	for oh_ind, ha_ind in inds.iteritems():
+		oh_joints[oh_ind] = ha_joints[ha_ind]
+	return oh_joints
+
+def get_collisions(robot, ha_joints):
+	oh_joints = convert_ha_joints_to_oh(robot, ha_joints)
+	robot.SetActiveDOFValues(oh_joints)
+	return robot.CheckSelfCollision()
+
 def main(settings):
+    # start up openrave stuffs
+    env = Environment()
+    env.Load('/etc/hubo-ach/sim/drchubo/drchubo-v3/robots/drchubo-v3.robot.xml')
+    env.SetViewer('qtcoin')
+    robot = env.GetRobots()[0]
+    
     # Open Hubo-Ach feed-forward and feed-back (reference and state) channels
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
     e = ach.Channel(ha.HUBO_CHAN_ENC_NAME)
@@ -198,7 +220,6 @@ def main(settings):
     p = Process(target=keyPresses, args=(myActuators, actuatorsLock))
     p.start()
     print "Master Slave Server Running"
-
     while True:
         if userExit:
             sys.exit(0)
@@ -208,7 +229,8 @@ def main(settings):
             actuator.read_all()
             time.sleep(0.005)
             ref.ref[mapMiniToFull(actuator.id)]=getJointDirection(actuator.id) * dyn2rad(actuator.current_position)
-        r.put(ref)
+        if not get_collisions(robot, ref.ref):
+            r.put(ref)
         actuatorsLock.release()
         time.sleep(0.02)
 
