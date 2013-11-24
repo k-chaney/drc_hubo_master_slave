@@ -19,3 +19,5 @@ drc_hubo_master_slave
 <p> to the synonyms in order to get all of the proper joints </p>
 
 <p> NOTE: THIS HASN'T BEEN TRIED WITHOUT THAT CHANGE SO IT MAY WORK.....it was merely thought that having all of the joints maping properly would be a good thing </p>
+
+<p> you need both the filter and the master_slave program running </p>
