@@ -165,7 +165,7 @@ def main(settings):
     # Open Hubo-Ach feed-forward and feed-back (reference and state) channels
     s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
     e = ach.Channel(ha.HUBO_CHAN_ENC_NAME)
-    r = ach.Channel(ha.HUBO_CHAN_REF_NAME)
+    r = ach.Channel(ha.HUBO_CHAN_REF_FILTER_NAME)
     #s.flush()
     #r.flush()
 
