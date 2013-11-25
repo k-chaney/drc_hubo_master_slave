@@ -1,0 +1,93 @@
+#!/bin/bash
+
+sudo ls > /dev/null
+
+HUBO_REF_FILTER_CHAN='hubo-ref-filter'
+#HUBO_STATE_CHAN='hubo-state'
+#HUBO_REF_CHAN='hubo-ref'
+HUBO_REMOTE_ADDRESS='0.0.0.0'
+FLAG_DRC_HUBO=0
+FLAG_REMOTE=0
+
+MakeAch()
+{
+	hubo-ach make
+	ach -1 -C $HUBO_REF_FILTER_CHAN -m 10 -n 3000
+	sudo chmod 777 /dev/shm/achshm-$HUBO_REF_FILTER_CHAN
+}
+
+Kill()
+{
+}
+
+Remote()
+{
+	achd -r pull $1 $HUBO_STATE_CHAN &
+	achd -r push $1 $HUBO_REF_CHAN &
+}
+
+KillRemote()
+{
+	hubo-ach remote kill
+}
+
+Start()
+{
+	MakeAch
+        if [[ $FLAG_REMOTE -eq 1 ]]
+        then
+            echo 'Starting remote connection'
+            Remote $HUBO_REMOTE_ADDRESS
+        fi
+	python drc_hubo_master_slave.py
+}
+
+StartOpenHubo()
+{
+	hubo-ach sim openhubo nophysics drc
+}
+
+Install()
+{
+}
+
+ShowUsage()
+{
+	echo 'start            : Starts controller'
+}
+
+SetFlags()
+{
+	HUBO_I=0
+	HUBO_TEMP1="$@"
+	HUBO_TEMP=($HUBO_TEMP1)
+	for var in "$@"
+	do
+	#    echo "$var"
+	    case "$var" in
+	      'remote' )
+	          FLAG_REMOTE=1
+	          HUBO_REMOTE_ADDRESS=${HUBO_TEMP[$(($HUBO_I+1))]}
+	          echo "Remote address set: "$HUBO_REMOTE_ADDRESS
+	      ;;
+	      'drc' )
+	          FLAG_DRC_HUBO=1
+	      ;;
+	    esac
+	    HUBO_I=$(($HUBO_I+1))
+	
+	done
+}
+
+
+
+
+#Start here
+SetFlags $@
+case "$1" in
+	'start' )
+		Start
+	;;
+esac
+
+exit 0
