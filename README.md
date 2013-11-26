@@ -9,6 +9,9 @@ drc_hubo_master_slave
 <p>2) getch</p>
 <p>   https://pypi.python.org/packages/source/g/getch/getch-1.0-python2.tar.gz</p>
 
+<p>3) pydynamixel </p>
+<p>   git clone https://github.com/thedancomplex/pydynamixel </p>
+
 
 <p> you need openhubo and openrave installed</p>
 
