@@ -147,6 +147,8 @@ def convert_ha_joints_to_oh(robot, ha_joints):
 	oh_joints = numpy.zeros(robot.GetDOF())
 	inds = openhubo.mapping.ha_ind_from_oh_ind(robot)
 	for oh_ind, ha_ind in inds.iteritems():
+#            print oh_ind, ha_ind
+            if not (ha_ind==None or oh_ind==None):
 		oh_joints[oh_ind] = ha_joints[ha_ind]
 	return oh_joints
 
